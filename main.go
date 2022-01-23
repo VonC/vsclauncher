@@ -1,9 +1,18 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
+	"vsclauncher/logger"
+	"vsclauncher/vscode"
 )
 
 func main() {
-	fmt.Println("vsclauncher")
+	logger.SetLevel("debug")
+	logger.Debug("vsclauncher")
+	currentWorkingDirectory, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	vscode.FindWorkspace(currentWorkingDirectory)
 }
