@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"vsclauncher/logger"
+
+	"github.com/hbollon/go-edlib"
 )
 
 type wsfinder struct {
@@ -15,19 +17,38 @@ type wsfinder struct {
 	vscode      string
 }
 
-type workspace string
-
-func (w workspace) String() string {
-	return string(w)
+type workspace struct {
+	fullpath string
+	path     string
+	name     string
+	distance int
 }
 
-type workspaces []workspace
+func newWorkspace(fullpath string, filter string) *workspace {
+	path := filepath.Dir(fullpath)
+	name := filepath.Base(fullpath)
+	name = strings.TrimSuffix(name, ".code-workspace")
+	d := edlib.DamerauLevenshteinDistance(name, filter)
+	res := &workspace{
+		fullpath: fullpath,
+		path:     path,
+		name:     name,
+		distance: d,
+	}
+	return res
+}
+
+func (w workspace) String() string {
+	return w.fullpath
+}
+
+type workspaces []*workspace
 
 func (ws workspaces) isUnique() bool {
 	return (len(ws) == 1)
 }
 
-func newWorkspace(path string, name string) *wsfinder {
+func newWorkspaceFinder(path string, name string) *wsfinder {
 	wsf := &wsfinder{
 		path: filepath.Clean(path),
 		name: name,
@@ -39,7 +60,7 @@ func newWorkspace(path string, name string) *wsfinder {
 
 func FindWorkspace(path string, name string) string {
 	logger.Debug("FindWorkspace in path '%s', name '%s'", path, name)
-	wsf := newWorkspace(path, name)
+	wsf := newWorkspaceFinder(path, name)
 	ws := wsf.find(wsf.currentPath)
 	if ws.isUnique() {
 		return ws[0].String()
@@ -57,21 +78,31 @@ func (wsf *wsfinder) find(p string) workspaces {
 
 	for _, file := range files {
 		name := file.Name()
-		logger.Debug("file '%s'", name)
+		//logger.Debug("file '%s'", name)
 		if file.IsDir() {
 			if name == ".vscode" {
 				logger.Debug(".vscode detected")
 				ws := wsf.find(filepath.Join(p, name))
 				res = append(res, ws...)
 			} else {
-				logger.Debug("Skip folder '%s'", name)
+				//logger.Debug("Skip folder '%s'", name)
 				continue
 			}
 		} else if strings.HasSuffix(name, ".code-workspace") {
-			res = append(res, workspace(strings.TrimSuffix(name, ".code-workspace")))
-		} else {
+			w := newWorkspace(filepath.Join(p, name), wsf.name)
+			if wsf.hasNoFilter() || w.distance < len(w.name) {
+				logger.Debug("Add '%s', distance between '%s' and '%s': '%d'", w, w.name, wsf.name, w.distance)
+				res = append(res, w)
+			} else {
+				logger.Debug("SKIP '%s', distance between '%s' and '%s': '%d'", w, w.name, wsf.name, w.distance)
+			}
+		} else if name == "_x_" {
 			logger.Debug("Skip file '%s'", name)
 		}
 	}
 	return res
+}
+
+func (wsf *wsfinder) hasNoFilter() bool {
+	return len(wsf.name) == 0
 }
