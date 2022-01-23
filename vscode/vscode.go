@@ -61,14 +61,47 @@ func newWorkspaceFinder(path string, name string) *wsfinder {
 func FindWorkspace(path string, name string) string {
 	logger.Debug("FindWorkspace in path '%s', name '%s'", path, name)
 	wsf := newWorkspaceFinder(path, name)
-	ws := wsf.find(wsf.currentPath)
+	ws := wsf.find()
 	if ws.isUnique() {
 		return ws[0].String()
 	}
+	wsf.resetCurrentPath()
+	ws = wsf.findInParentVScodeFolders()
+	if ws.isUnique() {
+		return ws[0].String()
+	}
+	wsf.resetCurrentPath()
+	ws = wsf.findInParentGitRoot()
+	if ws.isUnique() {
+		return ws[0].String()
+	}
+	wsf.resetCurrentPath()
 	return ""
 }
 
-func (wsf *wsfinder) find(p string) workspaces {
+func (wsf *wsfinder) findInParentVScodeFolders() workspaces {
+	if wsf.isGitRoot() {
+		return nil
+	}
+	wsf.currentPath = filepath.Dir(wsf.currentPath)
+	logger.Debug("findInParentVScodeFolders '%s'", wsf.currentPath)
+	ws := wsf.find()
+	if len(ws) > 0 {
+		return ws
+	}
+	return wsf.findInParentVScodeFolders()
+}
+
+func (wsf *wsfinder) findInParentGitRoot() workspaces {
+	return nil
+}
+
+func (wsf *wsfinder) resetCurrentPath() {
+	wsf.currentPath = wsf.path
+}
+
+func (wsf *wsfinder) find() workspaces {
+	p := wsf.currentPath
 	res := make(workspaces, 0)
 	// https://stackoverflow.com/questions/55300117/how-do-i-find-all-files-that-have-a-certain-extension-in-go-regardless-of-depth
 	files, err := ioutil.ReadDir(p)
@@ -82,7 +115,9 @@ func (wsf *wsfinder) find(p string) workspaces {
 		if file.IsDir() {
 			if name == ".vscode" {
 				logger.Debug(".vscode detected")
-				ws := wsf.find(filepath.Join(p, name))
+				wsf.currentPath = filepath.Join(p, name)
+				ws := wsf.find()
+				wsf.currentPath = p
 				res = append(res, ws...)
 			} else {
 				//logger.Debug("Skip folder '%s'", name)
@@ -101,6 +136,26 @@ func (wsf *wsfinder) find(p string) workspaces {
 		}
 	}
 	return res
+}
+
+func (wsf *wsfinder) isGitRoot() bool {
+	p := wsf.currentPath
+	// https://stackoverflow.com/questions/55300117/how-do-i-find-all-files-that-have-a-certain-extension-in-go-regardless-of-depth
+	files, err := ioutil.ReadDir(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		name := file.Name()
+		//logger.Debug("file '%s'", name)
+		if file.IsDir() {
+			if name == ".git" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (wsf *wsfinder) hasNoFilter() bool {
