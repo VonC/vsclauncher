@@ -70,7 +70,6 @@ func FindWorkspace(path string, name string) string {
 	if ws.isUnique() {
 		return ws[0].String()
 	}
-	wsf.resetCurrentPath()
 	ws = wsf.findInParentGitRoot()
 	if ws.isUnique() {
 		return ws[0].String()
@@ -93,7 +92,24 @@ func (wsf *wsfinder) findInParentVScodeFolders() workspaces {
 }
 
 func (wsf *wsfinder) findInParentGitRoot() workspaces {
-	return nil
+	res := make(workspaces, 0)
+	wsf.resetCurrentPath()
+	p := filepath.Dir(wsf.path)
+	files, err := ioutil.ReadDir(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		name := file.Name()
+		//logger.Debug("file '%s'", name)
+		if file.IsDir() {
+			wsf.currentPath = filepath.Join(p, name)
+			ws := wsf.find()
+			res = append(res, ws...)
+		}
+	}
+	return res
 }
 
 func (wsf *wsfinder) resetCurrentPath() {
