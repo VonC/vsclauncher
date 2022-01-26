@@ -28,7 +28,7 @@ func newWorkspace(fullpath string, filter string) *workspace {
 	path := filepath.Dir(fullpath)
 	name := filepath.Base(fullpath)
 	name = strings.TrimSuffix(name, ".code-workspace")
-	d := edlib.DamerauLevenshteinDistance(name, filter)
+	d := edlib.LCSEditDistance(name, filter)
 	res := &workspace{
 		fullpath: fullpath,
 		path:     path,
