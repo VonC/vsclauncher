@@ -1,9 +1,11 @@
 package vscode
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"sort"
 	"strings"
 	"vsclauncher/logger"
 
@@ -48,6 +50,10 @@ func (ws workspaces) isUnique() bool {
 	return (len(ws) == 1)
 }
 
+func (ws workspaces) Len() int           { return len(ws) }
+func (ws workspaces) Swap(i, j int)      { ws[i], ws[j] = ws[j], ws[i] }
+func (ws workspaces) Less(i, j int) bool { return ws[i].distance < ws[j].distance }
+
 func newWorkspaceFinder(path string, name string) *wsfinder {
 	wsf := &wsfinder{
 		path: filepath.Clean(path),
@@ -75,6 +81,10 @@ func FindWorkspace(path string, name string) string {
 		return ws[0].String()
 	}
 	wsf.resetCurrentPath()
+	sort.Sort(ws)
+	for _, w := range ws {
+		fmt.Printf("Workspace (%d) '%s'\n", w.distance, w.fullpath)
+	}
 	return ""
 }
 
