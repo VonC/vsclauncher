@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"vsclauncher/logger"
 
+	"github.com/erikgeiser/promptkit/selection"
 	"github.com/hbollon/go-edlib"
+	"golang.org/x/sys/windows"
 )
 
 type wsfinder struct {
@@ -82,10 +86,12 @@ func FindWorkspace(path string, name string) string {
 	}
 	wsf.resetCurrentPath()
 	sort.Sort(ws)
-	for _, w := range ws {
-		fmt.Printf("Workspace (%d) '%s'\n", w.distance, w.fullpath)
-	}
-	return ""
+	/*
+		for _, w := range ws {
+			fmt.Printf("Workspace (%d) '%s'\n", w.distance, w.fullpath)
+		}
+	*/
+	return getWorkspace(ws).fullpath
 }
 
 func (wsf *wsfinder) findInParentVScodeFolders() workspaces {
@@ -186,4 +192,60 @@ func (wsf *wsfinder) isGitRoot() bool {
 
 func (wsf *wsfinder) hasNoFilter() bool {
 	return len(wsf.name) == 0
+}
+
+func (ws workspaces) names() []string {
+	res := make([]string, 0)
+	for _, w := range ws {
+		res = append(res, w.name)
+	}
+	return res
+}
+func (ws workspaces) getWorkspace(name string) *workspace {
+	for _, w := range ws {
+		if w.name == name {
+			return w
+		}
+	}
+	return nil
+}
+
+func getWorkspace(ws workspaces) *workspace {
+
+	// https://github.com/charmbracelet/bubbletea/issues/121
+	// https://github.com/erikgeiser/coninput/blob/main/example/main.go
+	con, err := windows.GetStdHandle(windows.STD_INPUT_HANDLE)
+	if err != nil {
+		log.Fatalf("get stdin handle: %s", err)
+	}
+
+	var originalConsoleMode uint32
+
+	if runtime.GOOS == "windows" {
+		err = windows.GetConsoleMode(con, &originalConsoleMode)
+		if err != nil {
+			log.Fatalf("get console mode: %s", err)
+		}
+
+		defer func() {
+			resetErr := windows.SetConsoleMode(con, originalConsoleMode)
+			if err == nil && resetErr != nil {
+				log.Fatalf("reset console mode: %s", resetErr)
+			}
+		}()
+	}
+
+	sp := selection.New("Chose a VSCode Worskpace to open:",
+		selection.Choices(ws.names()))
+	sp.PageSize = 3
+
+	choice, err := sp.RunPrompt()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+
+		os.Exit(1)
+	}
+
+	w := ws.getWorkspace(choice.String)
+	return w
 }
