@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	logger.SetLevel(logger.DEBUG)
+	logger.SetLevel(logger.INFO)
 	logger.Debug("vsclauncher")
 	currentWorkingDirectory, err := os.Getwd()
 	if err != nil {
@@ -20,7 +20,7 @@ func main() {
 		name = os.Args[1]
 	}
 	w := vscode.FindWorkspace(currentWorkingDirectory, name)
-	logger.Debug("Main: workspace found: '%s'", w)
+	fmt.Printf("Main: workspace found: '%s'\n", w)
 	if w == "" {
 		m := ""
 		if name != "" {
