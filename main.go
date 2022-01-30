@@ -31,6 +31,7 @@ func main() {
 			m = " for name '" + name + "'"
 		}
 		fmt.Printf("No VSCode workspace found%s\n", m)
+		os.Exit(0)
 	}
 
 	if !vscode.SwitchTo(w) {
