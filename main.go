@@ -11,7 +11,10 @@ import (
 
 func main() {
 	logger.SetLevel(logger.INFO)
-	logger.Debug("vsclauncher")
+	if os.Getenv("VSCDEBUG") != "" {
+		logger.SetLevel(logger.DEBUG)
+	}
+	logger.Debug("vsclauncher (%VSCDEBUG% for more)")
 	currentWorkingDirectory, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
