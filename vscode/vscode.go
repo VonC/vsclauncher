@@ -81,11 +81,16 @@ func FindWorkspace(path string, name string) string {
 		return ws[0].String()
 	}
 	ws = wsf.findInParentGitRoot()
-	if len(ws) == 0 {
-		return ""
-	}
 	if ws.isUnique() {
 		return ws[0].String()
+	}
+	prog := os.Getenv("PROG")
+	if prog != "" {
+		wsf.currentPath = filepath.Join(prog, "git")
+		ws = wsf.findInSubfolders()
+		if len(ws) == 0 {
+			return ""
+		}
 	}
 	wsf.resetCurrentPath()
 	sort.Sort(ws)
@@ -101,7 +106,11 @@ func (wsf *wsfinder) findInParentVScodeFolders() workspaces {
 	if wsf.isGitRoot() {
 		return nil
 	}
-	wsf.currentPath = filepath.Dir(wsf.currentPath)
+	p := filepath.Dir(wsf.currentPath)
+	if p == wsf.currentPath {
+		return nil
+	}
+	wsf.currentPath = p
 	logger.Debug("findInParentVScodeFolders '%s'", wsf.currentPath)
 	ws := wsf.find()
 	if len(ws) > 0 {
@@ -111,13 +120,18 @@ func (wsf *wsfinder) findInParentVScodeFolders() workspaces {
 }
 
 func (wsf *wsfinder) findInParentGitRoot() workspaces {
+	wsf.currentPath = filepath.Dir(wsf.path)
+	return wsf.findInSubfolders()
+}
+
+func (wsf *wsfinder) findInSubfolders() workspaces {
 	res := make(workspaces, 0)
-	wsf.resetCurrentPath()
-	p := filepath.Dir(wsf.path)
-	files, err := ioutil.ReadDir(p)
+
+	files, err := ioutil.ReadDir(wsf.currentPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+	p := wsf.currentPath
 
 	for _, file := range files {
 		name := file.Name()
