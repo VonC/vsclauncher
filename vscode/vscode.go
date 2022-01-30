@@ -81,6 +81,9 @@ func FindWorkspace(path string, name string) string {
 		return ws[0].String()
 	}
 	ws = wsf.findInParentGitRoot()
+	if len(ws) == 0 {
+		return ""
+	}
 	if ws.isUnique() {
 		return ws[0].String()
 	}
