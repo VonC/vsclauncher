@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 	"vsclauncher/logger"
 	"vsclauncher/vscode"
 )
@@ -27,5 +28,11 @@ func main() {
 			m = " for name '" + name + "'"
 		}
 		fmt.Printf("No VSCode workspace found%s\n", m)
+	}
+
+	if !vscode.SwitchTo(w) {
+		vscode.Launch(w)
+		time.Sleep(2 * time.Second)
+		vscode.SwitchTo(w)
 	}
 }
