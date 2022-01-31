@@ -16,7 +16,7 @@ func Launch(w string) {
 	if d == "" {
 		d = filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs\\Microsoft VS Code\\bin\\code.cmd")
 	} else {
-		d = filepath.Join(d, "code.cmd")
+		d = filepath.Join(d, "code.exe")
 	}
 	// https://stackoverflow.com/questions/6376113/how-do-i-use-spaces-in-the-command-prompt
 	c := fmt.Sprintf(`"cd "%s" && "%s" "%s""`, ws.path, d, w)
