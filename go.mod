@@ -8,7 +8,7 @@ require (
 	github.com/hbollon/go-edlib v1.5.0
 	github.com/rodrigocfd/windigo v0.0.0-20211227035213-bf60c3c8209b
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	golang.org/x/sys v0.1.0
 )
 
 require (
