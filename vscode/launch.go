@@ -15,6 +15,9 @@ func Launch(w string) {
 	d := os.Getenv("vscodei")
 	if d == "" {
 		d = filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs\\Microsoft VS Code\\bin\\code.cmd")
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			d = filepath.Join(os.Getenv("ProgramFiles"), "Microsoft VS Code\\bin\\code.cmd")
+		}
 	} else {
 		d = filepath.Join(d, "code.exe")
 	}
