@@ -127,6 +127,10 @@ func Debug(msg string, v ...interface{}) {
 	gl.Debug(msg, v...)
 }
 
+func Info(msg string, v ...interface{}) {
+	gl.Info(msg, v...)
+}
+
 func SetLevel(level LogLevel) {
 	gl.Config.Loglevel = level
 }
